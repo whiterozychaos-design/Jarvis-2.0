@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JARVIS — Personal AI Agent</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --arc: #00d4ff;
+    --arc-dim: #0088aa;
+    --arc-glow: rgba(0,212,255,0.3);
+    --arc-faint: rgba(0,212,255,0.08);
+    --gold: #ffb700;
+    --red: #ff3c3c;
+    --bg: #020a10;
+    --panel: #040f17;
+    --panel2: #061520;
+    --border: rgba(0,212,255,0.2);
+    --text: #cce8f0;
+    --dim: #4a7a8a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    font-family: 'Rajdhani', sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Radial glow center */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 800px;
+    height: 800px;
+    background: radial-gradient(circle, rgba(0,212,255,0.04) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+
+  .logo-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .arc-reactor {
+    width: 52px;
+    height: 52px;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .arc-reactor svg {
+    width: 100%;
+    height: 100%;
+    animation: reactor-spin 8s linear infinite;
+  }
+
+  @keyframes reactor-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .arc-core {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 14px; height: 14px;
+    background: var(--arc);
+    border-radius: 50%;
+    box-shadow: 0 0 12px var(--arc), 0 0 30px var(--arc), 0 0 50px var(--arc-glow);
+    animation: pulse-core 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-core {
+    0%, 100% { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+    50% { opacity: 0.7; transform: translate(-50%,-50%) scale(0.85); }
+  }
+
+  .logo-text h1 {
+    font-family: 'Orbitron', monospace;
+    font-size: 2rem;
+    font-weight: 900;
+    letter-spacing: 0.3em;
+    color: var(--arc);
+    text-shadow: 0 0 20px var(--arc-glow), 0 0 40px rgba(0,212,255,0.15);
+    line-height: 1;
+  }
+
+  .logo-text p {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--dim);
+    letter-spacing: 0.2em;
+    margin-top: 4px;
+  }
+
+  .status-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--arc-faint);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 16px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--arc);
+    letter-spacing: 0.1em;
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    background: #00ff88;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #00ff88;
+    animation: blink 1.5s ease-in-out infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ── MAIN GRID ── */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 20px;
+  }
+
+  @media (max-width: 768px) {
+    .main-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ── PANEL BASE ── */
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--arc), transparent);
+    opacity: 0.6;
+  }
+
+  .panel-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .panel-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    color: var(--arc);
+    text-transform: uppercase;
+  }
+
+  .panel-tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--dim);
+    letter-spacing: 0.1em;
+  }
+
+  /* ── COMMAND INPUT ── */
+  .command-section { padding: 20px; }
+
+  .command-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--dim);
+    letter-spacing: 0.15em;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .command-label::before {
+    content: '//';
+    color: var(--arc-dim);
+  }
+
+  textarea {
+    width: 100%;
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.85rem;
+    line-height: 1.7;
+    padding: 16px;
+    resize: vertical;
+    min-height: 130px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    letter-spacing: 0.02em;
+  }
+
+  textarea::placeholder {
+    color: var(--dim);
+    opacity: 0.6;
+  }
+
+  textarea:focus {
+    border-color: var(--arc);
+    box-shadow: 0 0 0 1px rgba(0,212,255,0.1), inset 0 0 20px rgba(0,212,255,0.03);
+  }
+
+  /* ── SCHEDULE ROW ── */
+  .schedule-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-top: 14px;
+  }
+
+  .field-group { display: flex; flex-direction: column; gap: 6px; }
+
+  .field-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--dim);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  select, input[type="time"] {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.8rem;
+    padding: 10px 12px;
+    outline: none;
+    width: 100%;
+    transition: border-color 0.2s;
+    appearance: none;
+    cursor: pointer;
+  }
+
+  select:focus, input[type="time"]:focus {
+    border-color: var(--arc);
+  }
+
+  select option { background: #061520; }
+
+  /* ── BUTTONS ── */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .btn {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-primary {
+    background: var(--arc);
+    color: #000;
+    font-weight: 700;
+    flex: 1;
+    box-shadow: 0 0 20px rgba(0,212,255,0.3);
+  }
+
+  .btn-primary:hover {
+    background: #33ddff;
+    box-shadow: 0 0 30px rgba(0,212,255,0.5);
+    transform: translateY(-1px);
+  }
+
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--arc);
+    border: 1px solid var(--border);
+    letter-spacing: 0.15em;
+  }
+
+  .btn-secondary:hover {
+    background: var(--arc-faint);
+    border-color: var(--arc);
+  }
+
+  .btn-danger {
+    background: transparent;
+    color: var(--red);
+    border: 1px solid rgba(255,60,60,0.3);
+    font-size: 0.6rem;
+    padding: 10px 16px;
+  }
+
+  .btn-danger:hover {
+    background: rgba(255,60,60,0.1);
+    border-color: var(--red);
+  }
+
+  /* ── JARVIS RESPONSE ── */
+  .response-panel { padding: 20px; }
+
+  .response-box {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 16px;
+    min-height: 180px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.8rem;
+    line-height: 1.8;
+    color: var(--arc);
+    position: relative;
+    overflow-y: auto;
+    max-height: 300px;
+  }
+
+  .response-placeholder {
+    color: var(--dim);
+    font-style: italic;
+    font-size: 0.75rem;
+  }
+
+  .response-line {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 4px;
+    animation: fadeInLine 0.3s ease forwards;
+    opacity: 0;
+  }
+
+  @keyframes fadeInLine {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .response-line .prefix { color: var(--gold); flex-shrink: 0; }
+  .response-line .content { color: var(--text); }
+  .response-line.step .prefix { color: var(--arc); }
+  .response-line.warn .prefix { color: var(--red); }
+  .response-line.warn .content { color: var(--red); opacity: 0.8; }
+
+  .typing-cursor {
+    display: inline-block;
+    width: 8px; height: 14px;
+    background: var(--arc);
+    margin-left: 4px;
+    animation: cursor-blink 0.7s step-end infinite;
+    vertical-align: middle;
+  }
+
+  @keyframes cursor-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  /* ── SIDE PANEL ── */
+  .side-col { display: flex; flex-direction: column; gap: 20px; }
+
+  /* ── TASK QUEUE ── */
+  .task-list { padding: 12px 16px; max-height: 260px; overflow-y: auto; }
+
+  .task-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(0,212,255,0.06);
+    animation: fadeInLine 0.3s ease forwards;
+    opacity: 0;
+  }
+
+  .task-item:last-child { border-bottom: none; }
+
+  .task-num {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.55rem;
+    color: var(--dim);
+    width: 20px;
+    flex-shrink: 0;
+    text-align: center;
+  }
+
+  .task-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  .task-info { flex: 1; min-width: 0; }
+
+  .task-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .task-meta {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--dim);
+    margin-top: 2px;
+  }
+
+  .task-status {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    padding: 3px 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .task-status.active {
+    background: rgba(0,212,255,0.12);
+    color: var(--arc);
+    border: 1px solid rgba(0,212,255,0.3);
+  }
+
+  .task-status.pending {
+    background: rgba(255,183,0,0.08);
+    color: var(--gold);
+    border: 1px solid rgba(255,183,0,0.2);
+  }
+
+  .task-status.done {
+    background: rgba(0,255,136,0.08);
+    color: #00ff88;
+    border: 1px solid rgba(0,255,136,0.2);
+  }
+
+  .empty-tasks {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--dim);
+    text-align: center;
+    padding: 30px 0;
+    opacity: 0.6;
+  }
+
+  /* ── STATS ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+  }
+
+  .stat-cell {
+    background: var(--panel);
+    padding: 16px;
+    text-align: center;
+  }
+
+  .stat-value {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--arc);
+    text-shadow: 0 0 12px var(--arc-glow);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.58rem;
+    color: var(--dim);
+    letter-spacing: 0.1em;
+    margin-top: 6px;
+    text-transform: uppercase;
+  }
+
+  /* ── TOOLS ── */
+  .tools-panel { padding: 14px 16px; }
+
+  .tool-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .tool-chip {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 8px 6px;
+    text-align: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--dim);
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .tool-chip:hover {
+    border-color: var(--arc);
+    color: var(--arc);
+    background: var(--arc-faint);
+  }
+
+  .tool-chip .tool-icon { font-size: 1rem; display: block; margin-bottom: 4px; }
+
+  /* ── LOADING ── */
+  .loading-bar {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--arc), transparent);
+    background-size: 200% 100%;
+    animation: loading-sweep 1.5s linear infinite;
+    display: none;
+  }
+
+  .loading-bar.active { display: block; }
+
+  @keyframes loading-sweep {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .footer-text {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--dim);
+    letter-spacing: 0.1em;
+  }
+
+  .footer-text span { color: var(--arc); }
+
+  /* ── VOICE BUTTON ── */
+  .voice-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 14px;
+    padding: 14px 16px;
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mic-btn {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    border: 2px solid var(--arc);
+    background: var(--arc-faint);
+    color: var(--arc);
+    font-size: 1.3rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    position: relative;
+    z-index: 1;
+  }
+
+  .mic-btn:hover {
+    background: rgba(0,212,255,0.15);
+    box-shadow: 0 0 20px var(--arc-glow);
+    transform: scale(1.05);
+  }
+
+  .mic-btn.listening {
+    background: rgba(255,60,60,0.15);
+    border-color: var(--red);
+    color: var(--red);
+    box-shadow: 0 0 25px rgba(255,60,60,0.4);
+    animation: mic-pulse 1s ease-in-out infinite;
+  }
+
+  @keyframes mic-pulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(255,60,60,0.3); }
+    50% { transform: scale(1.08); box-shadow: 0 0 35px rgba(255,60,60,0.6); }
+  }
+
+  .voice-info { flex: 1; min-width: 0; }
+
+  .voice-status {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--arc);
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+  }
+
+  .voice-status.active { color: var(--red); }
+
+  /* Sound wave bars */
+  .wave-bars {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    height: 24px;
+  }
+
+  .wave-bar {
+    width: 3px;
+    background: var(--arc-dim);
+    border-radius: 2px;
+    height: 4px;
+    transition: height 0.1s;
+  }
+
+  .wave-bars.active .wave-bar:nth-child(1) { animation: wave 0.8s ease-in-out infinite 0.0s; }
+  .wave-bars.active .wave-bar:nth-child(2) { animation: wave 0.8s ease-in-out infinite 0.1s; }
+  .wave-bars.active .wave-bar:nth-child(3) { animation: wave 0.8s ease-in-out infinite 0.2s; }
+  .wave-bars.active .wave-bar:nth-child(4) { animation: wave 0.8s ease-in-out infinite 0.15s; }
+  .wave-bars.active .wave-bar:nth-child(5) { animation: wave 0.8s ease-in-out infinite 0.05s; }
+  .wave-bars.active .wave-bar:nth-child(6) { animation: wave 0.8s ease-in-out infinite 0.25s; }
+  .wave-bars.active .wave-bar:nth-child(7) { animation: wave 0.8s ease-in-out infinite 0.12s; }
+  .wave-bars.active .wave-bar:nth-child(8) { animation: wave 0.8s ease-in-out infinite 0.18s; }
+  .wave-bars.active .wave-bar:nth-child(9) { animation: wave 0.8s ease-in-out infinite 0.08s; }
+  .wave-bars.active .wave-bar:nth-child(10) { animation: wave 0.8s ease-in-out infinite 0.22s; }
+
+  .wave-bars.active .wave-bar { background: var(--red); }
+
+  @keyframes wave {
+    0%, 100% { height: 4px; }
+    50% { height: 20px; }
+  }
+
+  .voice-transcript {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--dim);
+    margin-top: 4px;
+    font-style: italic;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+  }
+
+  .speak-btn {
+    background: transparent;
+    border: 1px solid rgba(0,212,255,0.2);
+    color: var(--dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    padding: 6px 12px;
+    border-radius: 2px;
+    cursor: pointer;
+    letter-spacing: 0.1em;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .speak-btn:hover { color: var(--arc); border-color: var(--arc); }
+  .speak-btn.speaking { color: var(--gold); border-color: var(--gold); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--panel2); }
+  ::-webkit-scrollbar-thumb { background: var(--arc-dim); border-radius: 2px; }
+
+  /* Corner decorations */
+  .panel .corner-tl, .panel .corner-br {
+    position: absolute;
+    width: 10px; height: 10px;
+    border-color: var(--arc);
+    border-style: solid;
+    opacity: 0.5;
+  }
+  .panel .corner-tl { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+  .panel .corner-br { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+  /* Notification toast */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: var(--panel);
+    border: 1px solid var(--arc);
+    border-left: 3px solid var(--arc);
+    padding: 14px 20px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--arc);
+    border-radius: 2px;
+    box-shadow: 0 0 30px rgba(0,212,255,0.2);
+    transform: translateX(120%);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 100;
+    max-width: 300px;
+  }
+  .toast.show { transform: translateX(0); }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo-group">
+      <div class="arc-reactor">
+        <svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="26" cy="26" r="24" stroke="#00d4ff" stroke-width="0.5" stroke-dasharray="4 3"/>
+          <circle cx="26" cy="26" r="18" stroke="#00d4ff" stroke-width="0.5" stroke-dasharray="2 4"/>
+          <polygon points="26,4 30,22 26,18 22,22" fill="none" stroke="#00d4ff" stroke-width="1" opacity="0.7"/>
+          <polygon points="48,26 30,30 34,26 30,22" fill="none" stroke="#00d4ff" stroke-width="1" opacity="0.7"/>
+          <polygon points="26,48 22,30 26,34 30,30" fill="none" stroke="#00d4ff" stroke-width="1" opacity="0.7"/>
+          <polygon points="4,26 22,22 18,26 22,30" fill="none" stroke="#00d4ff" stroke-width="1" opacity="0.7"/>
+        </svg>
+        <div class="arc-core"></div>
+      </div>
+      <div class="logo-text">
+        <h1>JARVIS</h1>
+        <p>JUST A RATHER VERY INTELLIGENT SYSTEM</p>
+      </div>
+    </div>
+    <div class="status-badge">
+      <div class="status-dot"></div>
+      SYSTEM ONLINE
+    </div>
+  </header>
+
+  <!-- MAIN GRID -->
+  <div class="main-grid">
+
+    <!-- LEFT COLUMN -->
+    <div class="left-col">
+
+      <!-- COMMAND INPUT PANEL -->
+      <div class="panel" style="margin-bottom:20px">
+        <div class="corner-tl"></div>
+        <div class="corner-br"></div>
+        <div class="panel-header">
+          <span class="panel-title">Command Interface</span>
+          <span class="panel-tag">INPUT MODULE v2.4</span>
+        </div>
+        <div class="command-section">
+          <div class="command-label">Describe your automation task</div>
+          <textarea id="commandInput" placeholder="Example: Go to ChatGPT and get 5 video title ideas about motivation, then go to Suno and make 3 songs, then edit them together into a video and post to TikTok..."></textarea>
+
+          <!-- VOICE COMMAND ROW -->
+          <div class="voice-row">
+            <button class="mic-btn" id="micBtn" onclick="toggleVoice()" title="Hold to speak">🎤</button>
+            <div class="voice-info">
+              <div class="voice-status" id="voiceStatus">VOICE COMMAND READY</div>
+              <div class="wave-bars" id="waveBars">
+                <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+              </div>
+              <div class="voice-transcript" id="voiceTranscript">// Click mic and speak your command...</div>
+            </div>
+            <button class="speak-btn" id="speakBtn" onclick="speakLastResponse()">🔊 SPEAK</button>
+          </div>
+
+          <div class="schedule-row">
+            <div class="field-group">
+              <div class="field-label">Start Time</div>
+              <input type="time" id="scheduleTime" value="21:00">
+            </div>
+            <div class="field-group">
+              <div class="field-label">Repeat</div>
+              <select id="scheduleRepeat">
+                <option value="daily">Every Day</option>
+                <option value="weekdays">Weekdays Only</option>
+                <option value="weekly">Once a Week</option>
+                <option value="once">Run Once</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <div class="field-label">Platform</div>
+              <select id="schedulePlatform">
+                <option value="all">All Platforms</option>
+                <option value="tiktok">TikTok</option>
+                <option value="instagram">Instagram</option>
+                <option value="youtube">YouTube Shorts</option>
+                <option value="facebook">Facebook</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="analyzeCommand()">⚡ ACTIVATE JARVIS</button>
+            <button class="btn btn-secondary" onclick="clearAll()">CLEAR</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- JARVIS RESPONSE PANEL -->
+      <div class="panel">
+        <div class="corner-tl"></div>
+        <div class="corner-br"></div>
+        <div class="panel-header">
+          <span class="panel-title">Jarvis Response</span>
+          <span class="panel-tag" id="responseTag">AWAITING INPUT</span>
+        </div>
+        <div class="loading-bar" id="loadingBar"></div>
+        <div class="response-panel">
+          <div class="response-box" id="responseBox">
+            <span class="response-placeholder">// Jarvis is standing by. Enter your command above and hit ACTIVATE...</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="side-col">
+
+      <!-- STATS -->
+      <div class="panel">
+        <div class="corner-tl"></div>
+        <div class="corner-br"></div>
+        <div class="stats-grid">
+          <div class="stat-cell">
+            <div class="stat-value" id="statTasks">0</div>
+            <div class="stat-label">Tasks Built</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-value" id="statSteps">0</div>
+            <div class="stat-label">Steps Mapped</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-value" id="statRuns">0</div>
+            <div class="stat-label">Total Runs</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-value" id="statTime">--</div>
+            <div class="stat-label">Next Run</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TASK QUEUE -->
+      <div class="panel" style="flex:1">
+        <div class="corner-tl"></div>
+        <div class="corner-br"></div>
+        <div class="panel-header">
+          <span class="panel-title">Task Queue</span>
+          <span class="panel-tag" id="queueCount">0 TASKS</span>
+        </div>
+        <div class="task-list" id="taskList">
+          <div class="empty-tasks">// No tasks scheduled yet</div>
+        </div>
+      </div>
+
+      <!-- CONNECTED TOOLS -->
+      <div class="panel">
+        <div class="corner-tl"></div>
+        <div class="corner-br"></div>
+        <div class="panel-header">
+          <span class="panel-title">Linked Tools</span>
+          <span class="panel-tag">INTEGRATIONS</span>
+        </div>
+        <div class="tools-panel">
+          <div class="tool-grid">
+            <div class="tool-chip"><span class="tool-icon">🤖</span>ChatGPT</div>
+            <div class="tool-chip"><span class="tool-icon">🎵</span>Suno</div>
+            <div class="tool-chip"><span class="tool-icon">✂️</span>Clideo</div>
+            <div class="tool-chip"><span class="tool-icon">📱</span>TikTok</div>
+            <div class="tool-chip"><span class="tool-icon">📸</span>Instagram</div>
+            <div class="tool-chip"><span class="tool-icon">▶️</span>YouTube</div>
+            <div class="tool-chip"><span class="tool-icon">🎨</span>Canva</div>
+            <div class="tool-chip"><span class="tool-icon">📝</span>Notion</div>
+            <div class="tool-chip"><span class="tool-icon">➕</span>Add Tool</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-text">JARVIS PERSONAL AI AGENT // <span>BUILD 001</span> // ALL SYSTEMS NOMINAL</div>
+    <div class="footer-text">POWERED BY <span>CLAUDE AI</span></div>
+  </footer>
+
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+  let taskCount = 0;
+  let totalSteps = 0;
+  let totalRuns = parseInt(localStorage.getItem('jarvis_runs') || '0');
+  let tasks = JSON.parse(localStorage.getItem('jarvis_tasks') || '[]');
+
+  // Restore state
+  document.getElementById('statRuns').textContent = totalRuns;
+  renderTasks();
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  function clearAll() {
+    document.getElementById('commandInput').value = '';
+    document.getElementById('responseBox').innerHTML = '<span class="response-placeholder">// Jarvis is standing by. Enter your command above and hit ACTIVATE...</span>';
+    document.getElementById('responseTag').textContent = 'AWAITING INPUT';
+  }
+
+  function renderTasks() {
+    const list = document.getElementById('taskList');
+    const count = tasks.length;
+    document.getElementById('queueCount').textContent = count + ' TASKS';
+    document.getElementById('statTasks').textContent = count;
+
+    if (count === 0) {
+      list.innerHTML = '<div class="empty-tasks">// No tasks scheduled yet</div>';
+      return;
+    }
+
+    list.innerHTML = tasks.map((t, i) => `
+      <div class="task-item" style="animation-delay:${i * 0.05}s">
+        <div class="task-num">${String(i+1).padStart(2,'0')}</div>
+        <div class="task-icon">${t.icon}</div>
+        <div class="task-info">
+          <div class="task-name">${t.name}</div>
+          <div class="task-meta">${t.time} · ${t.repeat} · ${t.steps} steps</div>
+        </div>
+        <div class="task-status ${t.status}">${t.status.toUpperCase()}</div>
+      </div>
+    `).join('');
+  }
+
+  async function analyzeCommand() {
+    const command = document.getElementById('commandInput').value.trim();
+    if (!command) {
+      showToast('// Enter a command first, sir.');
+      return;
+    }
+
+    const time = document.getElementById('scheduleTime').value;
+    const repeat = document.getElementById('scheduleRepeat').value;
+    const platform = document.getElementById('schedulePlatform').value;
+
+    // Show loading
+    const loadingBar = document.getElementById('loadingBar');
+    const responseBox = document.getElementById('responseBox');
+    const responseTag = document.getElementById('responseTag');
+
+    loadingBar.classList.add('active');
+    responseTag.textContent = 'PROCESSING...';
+    responseBox.innerHTML = '<span class="response-placeholder">// Analyzing command... <span class="typing-cursor"></span></span>';
+
+    // Get API key
+    const apiKey = localStorage.getItem('jarvis_apikey') || '';
+    if (!apiKey) {
+      loadingBar.classList.remove('active');
+      responseTag.textContent = 'API KEY REQUIRED';
+      responseBox.innerHTML = `
+        <div class="response-line warn"><span class="prefix">⚠</span><span class="content">No API key found. Enter your Anthropic API key below to activate Jarvis.</span></div>
+        <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
+          <input id="apiKeyInput" type="password" placeholder="sk-ant-api03-..." style="flex:1;min-width:200px;background:#061520;border:1px solid rgba(0,212,255,0.3);color:#cce8f0;font-family:'Share Tech Mono',monospace;font-size:0.8rem;padding:10px 12px;outline:none;border-radius:2px;" />
+          <button onclick="saveApiKey()" style="background:#00d4ff;color:#000;border:none;font-family:'Orbitron',monospace;font-size:0.6rem;letter-spacing:0.15em;padding:10px 18px;cursor:pointer;border-radius:2px;white-space:nowrap;">SAVE KEY</button>
+        </div>
+        <div style="margin-top:10px;font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:#4a7a8a;line-height:1.8;">
+          // Get a free API key at: <a href="https://console.anthropic.com" target="_blank" style="color:#00d4ff;">console.anthropic.com</a><br>
+          // Your key is saved only on your device, never shared.
+        </div>`;
+      return;
+    }
+
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true"
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          system: `You are JARVIS, a personal AI automation agent assistant with a confident, precise military-style communication tone. 
+          
+When the user describes an automation task, you:
+1. Confirm you understood the mission
+2. Break it into numbered STEPS clearly labeled with which tool/website to use
+3. Estimate how long it takes
+4. Mention what you'll need from the user to actually run it (accounts, API keys, etc.)
+5. End with a motivational one-liner like Iron Man's JARVIS would say
+
+Format your response with these line prefixes:
+[MISSION] - confirming the task
+[STEP N] - each numbered step
+[TIME] - time estimate
+[REQUIRES] - what accounts/access is needed
+[JARVIS] - your closing one-liner
+
+Keep it concise and punchy. Max 12 lines total.`,
+          messages: [{ role: "user", content: `Task: ${command}\nSchedule: ${time}, ${repeat}\nPost to: ${platform}` }]
+        })
+      });
+
+      const data = await response.json();
+      const text = data.content?.map(b => b.text || '').join('') || 'Unable to process command.';
+
+      loadingBar.classList.remove('active');
+      responseTag.textContent = 'MISSION MAPPED';
+
+      // Parse and render lines
+      const lines = text.split('\n').filter(l => l.trim());
+
+      // Save plain text for speech
+      lastResponseText = lines.map(l => l.replace(/\[.*?\]/g, '').trim()).filter(Boolean).join('. ');
+      responseBox.innerHTML = '';
+
+      lines.forEach((line, i) => {
+        const div = document.createElement('div');
+        div.className = 'response-line';
+        div.style.animationDelay = (i * 0.08) + 's';
+
+        let prefix = '›';
+        let cls = '';
+        let content = line;
+
+        if (line.startsWith('[MISSION]')) { prefix = '◉'; cls = ''; content = line.replace('[MISSION]', '').trim(); }
+        else if (line.startsWith('[STEP')) { prefix = line.match(/\[STEP (\d+)\]/)?.[0] || '▸'; cls = 'step'; content = line.replace(/\[STEP \d+\]/, '').trim(); }
+        else if (line.startsWith('[TIME]')) { prefix = '⏱'; content = line.replace('[TIME]', '').trim(); }
+        else if (line.startsWith('[REQUIRES]')) { prefix = '⚠'; cls = 'warn'; content = line.replace('[REQUIRES]', '').trim(); }
+        else if (line.startsWith('[JARVIS]')) { prefix = '◈'; content = line.replace('[JARVIS]', '').trim(); }
+
+        div.innerHTML = `<span class="prefix">${prefix}</span><span class="content">${content}</span>`;
+        div.classList.add(cls);
+        responseBox.appendChild(div);
+      });
+
+      // Count steps
+      const stepCount = lines.filter(l => l.startsWith('[STEP')).length;
+      totalSteps += stepCount;
+      document.getElementById('statSteps').textContent = totalSteps;
+
+      // Add to task queue
+      const icons = ['🎬','🤖','🎵','📹','✂️','🚀','⚡','🎯'];
+      const firstLine = lines.find(l => l.startsWith('[MISSION]')) || command;
+      const taskName = firstLine.replace('[MISSION]', '').trim().slice(0, 35) + (firstLine.length > 35 ? '…' : '');
+
+      tasks.unshift({
+        name: taskName || command.slice(0,35),
+        icon: icons[Math.floor(Math.random() * icons.length)],
+        time: time,
+        repeat: repeat,
+        steps: stepCount,
+        status: 'active'
+      });
+
+      if (tasks.length > 10) tasks = tasks.slice(0,10);
+      localStorage.setItem('jarvis_tasks', JSON.stringify(tasks));
+
+      totalRuns++;
+      localStorage.setItem('jarvis_runs', totalRuns);
+      document.getElementById('statRuns').textContent = totalRuns;
+      document.getElementById('statTime').textContent = time;
+
+      renderTasks();
+      showToast('// Mission mapped. Standing by for deployment, sir.');
+
+      // Auto-speak the Jarvis closing line
+      const jarvisLine = lines.find(l => l.startsWith('[JARVIS]'));
+      if (jarvisLine) {
+        setTimeout(() => speakText(jarvisLine.replace('[JARVIS]', '').trim()), 600);
+      }
+
+    } catch (err) {
+      loadingBar.classList.remove('active');
+      responseTag.textContent = 'ERROR';
+      responseBox.innerHTML = `<div class="response-line warn"><span class="prefix">⚠</span><span class="content">System error: ${err.message}. Check connection and retry.</span></div>`;
+    }
+  }
+
+  // ── VOICE COMMAND ──
+  let recognition = null;
+  let isListening = false;
+  let lastResponseText = '';
+
+  function setVoiceStatus(msg, active) {
+    const vs = document.getElementById('voiceStatus');
+    vs.textContent = msg;
+    active ? vs.classList.add('active') : vs.classList.remove('active');
+  }
+
+  function setListeningUI(on) {
+    isListening = on;
+    const btn = document.getElementById('micBtn');
+    const waves = document.getElementById('waveBars');
+    if (on) {
+      btn.classList.add('listening');
+      btn.textContent = '⏹';
+      waves.classList.add('active');
+    } else {
+      btn.classList.remove('listening');
+      btn.textContent = '🎤';
+      waves.classList.remove('active');
+    }
+  }
+
+  function showMicHelp() {
+    // Show inline help inside voice transcript area
+    document.getElementById('voiceTranscript').innerHTML =
+      '⚠ Allow mic: click the 🔒 icon in your browser address bar → Microphone → Allow → reload page';
+    setVoiceStatus('MIC BLOCKED — SEE INSTRUCTIONS ABOVE', false);
+    showPermissionModal();
+  }
+
+  function showPermissionModal() {
+    let modal = document.getElementById('permModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'permModal';
+      modal.style.cssText = `
+        position:fixed; inset:0; background:rgba(2,10,16,0.92);
+        z-index:999; display:flex; align-items:center; justify-content:center;
+        backdrop-filter:blur(4px);
+      `;
+      modal.innerHTML = `
+        <div style="
+          background:#040f17; border:1px solid #00d4ff;
+          border-top:3px solid #00d4ff; max-width:480px; width:90%;
+          padding:32px; position:relative; font-family:'Rajdhani',sans-serif;
+        ">
+          <div style="font-family:'Orbitron',monospace;font-size:0.8rem;color:#00d4ff;letter-spacing:0.2em;margin-bottom:20px;">
+            🎤 MICROPHONE ACCESS REQUIRED
+          </div>
+          <p style="color:#cce8f0;font-size:0.95rem;line-height:1.7;margin-bottom:20px;">
+            Jarvis needs microphone permission to hear your commands. Here's how to enable it:
+          </p>
+          <div style="background:#061520;border:1px solid rgba(0,212,255,0.15);padding:16px;margin-bottom:12px;font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:#4a7a8a;line-height:2;">
+            <div style="color:#00d4ff;margin-bottom:8px;">// CHROME / EDGE (PC & Android)</div>
+            <div>1. Look at the address bar at the top</div>
+            <div>2. Click the 🔒 lock icon (or ⓘ info icon)</div>
+            <div>3. Find <span style="color:#ffb700">Microphone</span> → set to <span style="color:#00ff88">Allow</span></div>
+            <div>4. Reload this page, then click the mic again</div>
+          </div>
+          <div style="background:#061520;border:1px solid rgba(0,212,255,0.15);padding:16px;margin-bottom:20px;font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:#4a7a8a;line-height:2;">
+            <div style="color:#00d4ff;margin-bottom:8px;">// SAFARI (iPhone / Mac)</div>
+            <div>1. Go to <span style="color:#ffb700">Settings → Safari → Microphone</span></div>
+            <div>2. Set to <span style="color:#00ff88">Allow</span></div>
+            <div>3. Or when Safari asks — tap <span style="color:#00ff88">Allow</span></div>
+          </div>
+          <button onclick="document.getElementById('permModal').remove()" style="
+            background:#00d4ff; color:#000; border:none;
+            font-family:'Orbitron',monospace; font-size:0.65rem;
+            letter-spacing:0.2em; padding:12px 28px; cursor:pointer; width:100%;
+          ">GOT IT — I'LL ENABLE IT</button>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+  }
+
+  async function toggleVoice() {
+    if (isListening) {
+      if (recognition) recognition.stop();
+      setListeningUI(false);
+      setVoiceStatus('VOICE COMMAND READY', false);
+      return;
+    }
+
+    // Check API support
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      document.getElementById('voiceTranscript').textContent = '// Voice not supported — please use Chrome or Edge browser.';
+      setVoiceStatus('BROWSER NOT SUPPORTED', false);
+      showToast('// Use Chrome or Edge for voice commands, sir.');
+      return;
+    }
+
+    // Explicitly request mic permission first
+    setVoiceStatus('REQUESTING MIC ACCESS...', false);
+    document.getElementById('voiceTranscript').textContent = '// Requesting microphone permission...';
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Permission granted — stop the stream (recognition will use its own)
+      stream.getTracks().forEach(t => t.stop());
+    } catch (err) {
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        showMicHelp();
+      } else if (err.name === 'NotFoundError') {
+        document.getElementById('voiceTranscript').textContent = '// No microphone detected on this device.';
+        setVoiceStatus('NO MIC DETECTED', false);
+        showToast('// No microphone found on this device.');
+      } else {
+        document.getElementById('voiceTranscript').textContent = '// Mic error: ' + err.message;
+        setVoiceStatus('MIC ERROR', false);
+      }
+      return;
+    }
+
+    // Permission granted — start recognition
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => {
+      setListeningUI(true);
+      setVoiceStatus('LISTENING — SPEAK NOW...', true);
+      document.getElementById('voiceTranscript').textContent = '// Speak your command, sir...';
+    };
+
+    recognition.onresult = (e) => {
+      let interim = '', final = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) final += t;
+        else interim += t;
+      }
+      const display = final || interim;
+      document.getElementById('voiceTranscript').textContent = '// ' + display;
+      if (final) document.getElementById('commandInput').value = final.trim();
+    };
+
+    recognition.onerror = (e) => {
+      setListeningUI(false);
+      if (e.error === 'not-allowed') {
+        showMicHelp();
+      } else if (e.error === 'no-speech') {
+        setVoiceStatus('NO SPEECH DETECTED — TRY AGAIN', false);
+        document.getElementById('voiceTranscript').textContent = '// No speech heard. Click mic and try again.';
+      } else if (e.error === 'network') {
+        setVoiceStatus('NETWORK ERROR — CHECK CONNECTION', false);
+        document.getElementById('voiceTranscript').textContent = '// Network issue. Voice needs internet to work.';
+      } else {
+        setVoiceStatus('VOICE ERROR: ' + e.error.toUpperCase(), false);
+      }
+    };
+
+    recognition.onend = () => {
+      setListeningUI(false);
+      const cmd = document.getElementById('commandInput').value.trim();
+      if (cmd) {
+        setVoiceStatus('COMMAND CAPTURED ✓', false);
+        document.getElementById('voiceTranscript').textContent = '// Captured: ' + cmd.slice(0, 60) + (cmd.length > 60 ? '…' : '');
+        showToast('// Command captured! Hit ACTIVATE JARVIS.');
+      } else {
+        setVoiceStatus('VOICE COMMAND READY', false);
+      }
+    };
+
+    try {
+      recognition.start();
+    } catch(e) {
+      setVoiceStatus('COULD NOT START MIC', false);
+      showToast('// Could not start mic: ' + e.message);
+    }
+  }
+
+  // ── JARVIS SPEAKS BACK ──
+  let isSpeaking = false;
+
+  function speakText(text) {
+    if (!window.speechSynthesis) {
+      showToast('// Text-to-speech not supported in this browser.');
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+
+    // Pick a deep/robotic voice if available
+    const voices = window.speechSynthesis.getVoices();
+    const preferred = voices.find(v =>
+      v.name.includes('Google UK English Male') ||
+      v.name.includes('Daniel') ||
+      v.name.includes('Alex') ||
+      v.name.toLowerCase().includes('male')
+    ) || voices[0];
+    if (preferred) utterance.voice = preferred;
+
+    utterance.rate = 0.92;
+    utterance.pitch = 0.8;
+    utterance.volume = 1;
+
+    const speakBtn = document.getElementById('speakBtn');
+
+    utterance.onstart = () => {
+      isSpeaking = true;
+      speakBtn.classList.add('speaking');
+      speakBtn.textContent = '⏸ SPEAKING';
+    };
+    utterance.onend = () => {
+      isSpeaking = false;
+      speakBtn.classList.remove('speaking');
+      speakBtn.textContent = '🔊 SPEAK';
+    };
+    utterance.onerror = () => {
+      isSpeaking = false;
+      speakBtn.classList.remove('speaking');
+      speakBtn.textContent = '🔊 SPEAK';
+    };
+
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function speakLastResponse() {
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      return;
+    }
+    if (!lastResponseText) {
+      speakText("No response to read yet, sir. Please activate a command first.");
+      return;
+    }
+    speakText(lastResponseText);
+  }
+
+  // Preload voices
+  if (window.speechSynthesis) {
+    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    window.speechSynthesis.getVoices();
+  }
+
+  function saveApiKey() {
+    const val = document.getElementById('apiKeyInput')?.value?.trim();
+    if (!val || !val.startsWith('sk-ant')) {
+      showToast('// Invalid key. Must start with sk-ant-...');
+      return;
+    }
+    localStorage.setItem('jarvis_apikey', val);
+    showToast('// API key saved. Activating Jarvis now...');
+    setTimeout(() => analyzeCommand(), 500);
+  }
+
+  function clearApiKey() {
+    localStorage.removeItem('jarvis_apikey');
+    showToast('// API key cleared.');
+  }
+
+  // Allow Enter+Ctrl to submit
+  document.getElementById('commandInput').addEventListener('keydown', e => {
+    if (e.ctrlKey && e.key === 'Enter') analyzeCommand();
+  });
+
+  // Clock
+  function updateClock() {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2,'0');
+    const m = String(now.getMinutes()).padStart(2,'0');
+    // Could show in header if needed
+  }
+  setInterval(updateClock, 1000);
+</script>
+</body>
+</html>
